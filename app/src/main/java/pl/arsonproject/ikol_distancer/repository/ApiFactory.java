@@ -17,13 +17,12 @@ public class ApiFactory {
             HttpUrl url = chain.request()
                     .url()
                     .newBuilder()
+                    .addQueryParameter("key", "YjgkjGs6UKVLuGL7ncGUySxO1ZBHw")
                     .build();
 
             Request newRequest = chain.request()
                     .newBuilder()
                     .url(url)
-                    .addHeader("x-rapidapi-host", "distance-calculator.p.rapidapi.com")
-                    .addHeader("x-rapidapi-key", "47b4cd7f1bmshda90762460e22ebp1c5fc3jsn1e44df9c0bee")
                     .build();
 
             return chain.proceed(newRequest);
@@ -37,7 +36,7 @@ public class ApiFactory {
     private static Retrofit retrofic(){
          return new Retrofit.Builder()
                  .client(distanceApi)
-                 .baseUrl("https://distance-calculator.p.rapidapi.com/v1/")
+                 .baseUrl("https://api.distancematrix.ai/maps/api/")
                  .addConverterFactory(MoshiConverterFactory.create())
                  .build();
     }

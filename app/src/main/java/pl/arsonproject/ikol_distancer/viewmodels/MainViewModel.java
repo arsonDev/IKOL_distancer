@@ -1,13 +1,12 @@
 package pl.arsonproject.ikol_distancer.viewmodels;
 
-import android.widget.Toast;
+import android.os.AsyncTask;
+import android.view.View;
 
-import androidx.lifecycle.LiveData;
+import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
-import java.io.IOException;
-
-import pl.arsonproject.ikol_distancer.models.Distance;
+import pl.arsonproject.ikol_distancer.models.MyResponse;
 import pl.arsonproject.ikol_distancer.repository.ApiFactory;
 import pl.arsonproject.ikol_distancer.repository.DistanceApi;
 import retrofit2.Call;
@@ -16,27 +15,75 @@ import retrofit2.Response;
 
 public class MainViewModel extends ViewModel {
 
-    // wprowadzenie danych do modeli
+    public MutableLiveData<String> distance;
+    public MutableLiveData<String> destination;
+    public MutableLiveData<String> source;
 
-    public LiveData<String> distance;
+    public MutableLiveData<String> firstPoint;
+    public MutableLiveData<String> secondPoint;
 
+    public MutableLiveData<Integer> loading;
 
     public MainViewModel(){
-
+        distance = new MutableLiveData("0 km");
+        destination = new MutableLiveData("Brak celu");
+        source = new MutableLiveData<>("");
+        firstPoint = new MutableLiveData<String>();
+        secondPoint = new MutableLiveData<String>();
+        loading = new MutableLiveData<Integer>(View.GONE);
     }
 
     public void doCalculate(){
-        DistanceApi api = ApiFactory.api;
-        api.calculateDistance("kilometers",41,74,8,42).enqueue(new Callback<Distance>() {
+        AsyncTask<String, Void, Void> loadingTask = new AsyncTask<String, Void, Void>() {
             @Override
-            public void onResponse(Call<Distance> call, Response<Distance> response) {
-                Distance distance = response.body();
+            protected Void doInBackground(String... strings) {
+                loading.postValue(View.VISIBLE);
+                try {
+                    Thread.currentThread();
+                    Thread.sleep(5000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+
+                DistanceApi api = ApiFactory.api;
+                api.calculateDistance(firstPoint.getValue(), secondPoint.getValue()).enqueue(new Callback<MyResponse>() {
+                    @Override
+                    public void onResponse(Call<MyResponse> call, Response<MyResponse> response) {
+                        if (response.isSuccessful()) {
+
+                            MyResponse myResponse = response.body();
+                            if (myResponse.getRows().size() > 0) {
+                                distance.postValue(myResponse.getRows().get(0).getElements().get(0).getDistance().getText());
+                                destination.postValue(myResponse.getDestinationAddresses().get(0));
+                                source.postValue(myResponse.getOriginAddresses().get(0));
+                            }
+
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(Call<MyResponse> call, Throwable t) {
+
+                    }
+                });
+
+                loading.postValue(View.GONE);
+                return null;
             }
 
             @Override
-            public void onFailure(Call<Distance> call, Throwable t) {
-
+            protected void onPostExecute(Void aVoid) {
+                super.onPostExecute(aVoid);
+                loading.setValue(View.GONE);
             }
-        });
+
+            @Override
+            protected void onProgressUpdate(Void... values) {
+                super.onProgressUpdate(values);
+                loading.setValue(View.VISIBLE);
+            }
+        };
+
+        loadingTask.execute();
     }
 }
