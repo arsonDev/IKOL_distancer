@@ -1,12 +1,12 @@
 package pl.arsonproject.ikol_distancer.viewmodels;
 
-import android.os.AsyncTask;
 import android.view.View;
 
+import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
-import pl.arsonproject.ikol_distancer.models.MyResponse;
+import pl.arsonproject.ikol_distancer.models.Location;
 import pl.arsonproject.ikol_distancer.repository.ApiFactory;
 import pl.arsonproject.ikol_distancer.repository.DistanceApi;
 import retrofit2.Call;
@@ -15,75 +15,61 @@ import retrofit2.Response;
 
 public class MainViewModel extends ViewModel {
 
-    public MutableLiveData<String> distance;
-    public MutableLiveData<String> destination;
-    public MutableLiveData<String> source;
-
+    public MutableLiveData<Integer> loadingState;
+    private MutableLiveData<String> errorMessage;
+    private MutableLiveData<Location> location;
+    private DistanceApi api;
     public MutableLiveData<String> firstPoint;
     public MutableLiveData<String> secondPoint;
 
-    public MutableLiveData<Integer> loading;
-
     public MainViewModel(){
-        distance = new MutableLiveData("0 km");
-        destination = new MutableLiveData("Brak celu");
-        source = new MutableLiveData<>("");
-        firstPoint = new MutableLiveData<String>();
-        secondPoint = new MutableLiveData<String>();
-        loading = new MutableLiveData<Integer>(View.GONE);
+        location = new MutableLiveData<>();
+        firstPoint = new MutableLiveData<>();
+        secondPoint = new MutableLiveData<>();
+        loadingState = new MutableLiveData<>(View.GONE);
+        errorMessage = new MutableLiveData<>();
+        api = ApiFactory.getInstance();
+    }
+
+    public LiveData<String> getErrorMessage() {
+        return errorMessage;
+    }
+
+    public LiveData<Location> getLocation() {
+        return location;
     }
 
     public void doCalculate(){
-        AsyncTask<String, Void, Void> loadingTask = new AsyncTask<String, Void, Void>() {
-            @Override
-            protected Void doInBackground(String... strings) {
-                loading.postValue(View.VISIBLE);
-                try {
-                    Thread.currentThread();
-                    Thread.sleep(5000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
+        loadingState.postValue(View.VISIBLE);
+        if (validateControl()) {
+            api.calculateDistance(firstPoint.getValue(), secondPoint.getValue()).enqueue(new Callback<Location>() {
+                @Override
+                public void onResponse(Call<Location> call, Response<Location> response) {
+                    if (response.isSuccessful() &&
+                            response.body().getStatus().equals("OK") &&
+                            response.body().getRows().size() > 0 &&
+                            response.body().getRows().get(0).getElements().size() > 0 &&
+                            response.body().getRows().get(0).getElements().get(0).getStatus().equals("OK"))
+                        location.setValue(response.body());
+                    else {
+                        location.setValue(null);
+                        errorMessage.setValue("Wprowadzone punkty są nieprawidłowe");
+                    }
                 }
 
-                DistanceApi api = ApiFactory.api;
-                api.calculateDistance(firstPoint.getValue(), secondPoint.getValue()).enqueue(new Callback<MyResponse>() {
-                    @Override
-                    public void onResponse(Call<MyResponse> call, Response<MyResponse> response) {
-                        if (response.isSuccessful()) {
+                @Override
+                public void onFailure(Call<Location> call, Throwable t) {
+                    location.setValue(null);
+                }
+            });
+        } else {
+            errorMessage.setValue("Wprowadzone punkty są nieprawidłowe");
+        }
+        loadingState.postValue(View.GONE);
+    }
 
-                            MyResponse myResponse = response.body();
-                            if (myResponse.getRows().size() > 0) {
-                                distance.postValue(myResponse.getRows().get(0).getElements().get(0).getDistance().getText());
-                                destination.postValue(myResponse.getDestinationAddresses().get(0));
-                                source.postValue(myResponse.getOriginAddresses().get(0));
-                            }
-
-                        }
-                    }
-
-                    @Override
-                    public void onFailure(Call<MyResponse> call, Throwable t) {
-
-                    }
-                });
-
-                loading.postValue(View.GONE);
-                return null;
-            }
-
-            @Override
-            protected void onPostExecute(Void aVoid) {
-                super.onPostExecute(aVoid);
-                loading.setValue(View.GONE);
-            }
-
-            @Override
-            protected void onProgressUpdate(Void... values) {
-                super.onProgressUpdate(values);
-                loading.setValue(View.VISIBLE);
-            }
-        };
-
-        loadingTask.execute();
+    private boolean validateControl() {
+        return (firstPoint.getValue() != null && (secondPoint.getValue() != null)) &&
+                (!firstPoint.getValue().trim().isEmpty() && !secondPoint.getValue().trim().isEmpty());
     }
 }

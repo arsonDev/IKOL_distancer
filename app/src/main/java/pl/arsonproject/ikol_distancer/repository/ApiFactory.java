@@ -41,5 +41,7 @@ public class ApiFactory {
                  .build();
     }
 
-    public static DistanceApi api = retrofic().create(DistanceApi.class);
+    public static DistanceApi getInstance() {
+        return retrofic().create(DistanceApi.class);
+    }
 }

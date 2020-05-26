@@ -4,7 +4,7 @@ import com.squareup.moshi.Json;
 
 import java.util.List;
 
-public class MyResponse {
+public class Location {
 
     @Json(name = "destination_addresses")
     private List<String> destinationAddresses = null;
@@ -19,31 +19,15 @@ public class MyResponse {
         return destinationAddresses;
     }
 
-    public void setDestinationAddresses(List<String> destinationAddresses) {
-        this.destinationAddresses = destinationAddresses;
-    }
-
     public List<String> getOriginAddresses() {
         return originAddresses;
-    }
-
-    public void setOriginAddresses(List<String> originAddresses) {
-        this.originAddresses = originAddresses;
     }
 
     public List<Row> getRows() {
         return rows;
     }
 
-    public void setRows(List<Row> rows) {
-        this.rows = rows;
-    }
-
     public String getStatus() {
         return status;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
     }
 }

@@ -5,37 +5,108 @@ import android.content.pm.PackageManager;
 import android.os.Bundle;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.constraintlayout.widget.ConstraintLayout;
+import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.databinding.DataBindingUtil;
+import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 
+import com.google.android.material.snackbar.Snackbar;
+import com.google.android.material.textfield.TextInputEditText;
+
+import butterknife.BindView;
+import butterknife.ButterKnife;
 import pl.arsonproject.ikol_distancer.R;
 import pl.arsonproject.ikol_distancer.databinding.ActivityMainBinding;
+import pl.arsonproject.ikol_distancer.models.Location;
 import pl.arsonproject.ikol_distancer.viewmodels.MainViewModel;
 
 public class MainActivity extends AppCompatActivity {
 
+    @BindView(R.id.inputFirstPoint)
+    TextInputEditText inputFirstPoint;
+
+    @BindView(R.id.inputSecondPoint)
+    TextInputEditText inputSecondPoint;
+
+    @BindView(R.id.container)
+    ConstraintLayout container;
+
+    private MainViewModel viewModel;
+    private ActivityMainBinding binding;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        ActivityMainBinding binding = DataBindingUtil.setContentView(this, R.layout.activity_main);
+        binding = DataBindingUtil.setContentView(this, R.layout.activity_main);
         binding.setLifecycleOwner(this);
-        MainViewModel viewModel = new ViewModelProvider(this).get(MainViewModel.class);
-
+        viewModel = new ViewModelProvider(this).get(MainViewModel.class);
         binding.setVm(viewModel);
 
+        ButterKnife.bind(this);
+        setObservable();
+    }
+
+    private void setObservable() {
+        viewModel.firstPoint.observe(this, new Observer<String>() {
+            @Override
+            public void onChanged(String s) {
+                if (s.trim().isEmpty())
+                    inputFirstPoint.setError("Uzupełnij pole");
+                else
+                    inputFirstPoint.setError(null);
+            }
+        });
+
+        viewModel.secondPoint.observe(this, new Observer<String>() {
+            @Override
+            public void onChanged(String s) {
+                if (s.trim().isEmpty())
+                    inputSecondPoint.setError("Uzupełnij pole");
+                else
+                    inputSecondPoint.setError(null);
+            }
+        });
+
+        viewModel.getErrorMessage().observe(this, new Observer<String>() {
+            @Override
+            public void onChanged(String s) {
+                if (!s.isEmpty())
+                    Snackbar.make(container, s, Snackbar.LENGTH_SHORT).show();
+            }
+        });
+
+        viewModel.getLocation().observe(this, new Observer<Location>() {
+            @Override
+            public void onChanged(Location location) {
+                if (location == null) {
+                    inputFirstPoint.setText("");
+                    inputSecondPoint.setText("");
+                    inputFirstPoint.setError(null);
+                    inputSecondPoint.setError(null);,,
+                }
+            }
+        });
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        binding = null;
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
         if (ContextCompat.checkSelfPermission(
-                this, Manifest.permission.INTERNET) ==
+                this, Manifest.permission.INTERNET) !=
                 PackageManager.PERMISSION_GRANTED) {
-            // You can use the API that requires the permission.
+            ActivityCompat.requestPermissions(MainActivity.this,
+                    new String[]{Manifest.permission.INTERNET},
+                    1001);
         } else if (shouldShowRequestPermissionRationale(Manifest.permission.INTERNET)) {
-            // In an educational UI, explain to the user why your app requires this
-            // permission for a specific feature to behave as expected. In this UI,
-            // include a "cancel" or "no thanks" button that allows the user to
-            // continue using your app without granting the permission.
-        } else {
-            // You can directly ask for the permission.
-            requestPermissions(new String[]{Manifest.permission.INTERNET},1000);
+
         }
     }
 }
