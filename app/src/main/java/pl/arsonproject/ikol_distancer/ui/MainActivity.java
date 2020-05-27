@@ -1,17 +1,20 @@
 package pl.arsonproject.ikol_distancer.ui;
 
 import android.Manifest;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.view.View;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
 import androidx.databinding.DataBindingUtil;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 
+import com.google.android.material.button.MaterialButton;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.textfield.TextInputEditText;
 
@@ -32,6 +35,9 @@ public class MainActivity extends AppCompatActivity {
 
     @BindView(R.id.container)
     ConstraintLayout container;
+
+    @BindView(R.id.button)
+    MaterialButton button;
 
     private MainViewModel viewModel;
     private ActivityMainBinding binding;
@@ -83,8 +89,16 @@ public class MainActivity extends AppCompatActivity {
                     inputFirstPoint.setText("");
                     inputSecondPoint.setText("");
                     inputFirstPoint.setError(null);
-                    inputSecondPoint.setError(null);,,
+                    inputSecondPoint.setError(null);
                 }
+            }
+        });
+
+        viewModel.permissionRequest.observe(this, new Observer<Boolean>() {
+            @Override
+            public void onChanged(Boolean aBoolean) {
+                if (checkPermission())
+                    viewModel.onPermissionGranted();
             }
         });
     }
@@ -95,18 +109,37 @@ public class MainActivity extends AppCompatActivity {
         binding = null;
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-
-        if (ContextCompat.checkSelfPermission(
-                this, Manifest.permission.INTERNET) !=
-                PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(MainActivity.this,
-                    new String[]{Manifest.permission.INTERNET},
-                    1001);
-        } else if (shouldShowRequestPermissionRationale(Manifest.permission.INTERNET)) {
-
+    private boolean checkPermission() {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.INTERNET) != PackageManager.PERMISSION_GRANTED) {
+            if (shouldShowRequestPermissionRationale(Manifest.permission.INTERNET)) {
+                new AlertDialog.Builder(this)
+                        .setTitle("Wymagane uprawnienia")
+                        .setMessage("Uprawnienie do Internetu potrzebne jest aby obliczyć dystans pomiedzy punktami")
+                        .setNegativeButton("Odmów", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialogInterface, int i) {
+                                button.setEnabled(false);
+                                Snackbar.make(container, "Uprawnienia są wymagane", Snackbar.LENGTH_LONG)
+                                        .setAction("Przyznaj", new View.OnClickListener() {
+                                            @Override
+                                            public void onClick(View view) {
+                                                ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.INTERNET}, 1001);
+                                            }
+                                        });
+                            }
+                        })
+                        .setPositiveButton("Przyznaj", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialogInterface, int i) {
+                                ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.INTERNET}, 1001);
+                            }
+                        })
+                        .create()
+                        .show();
+            } else {
+                ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.INTERNET}, 1001);
+            }
         }
+        return ActivityCompat.checkSelfPermission(this, Manifest.permission.INTERNET) == PackageManager.PERMISSION_GRANTED;
     }
 }
