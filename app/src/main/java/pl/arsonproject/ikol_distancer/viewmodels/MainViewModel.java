@@ -37,9 +37,13 @@ public class MainViewModel extends ViewModel {
     }
 
     private boolean validateControl() {
-
-        return (firstPoint.getValue() != null && (secondPoint.getValue() != null)) &&
-                (!firstPoint.getValue().trim().isEmpty() && !secondPoint.getValue().trim().isEmpty());
+        boolean result = false;
+        Location location = new Location();
+        if ((firstPoint.getValue() != null && (secondPoint.getValue() != null))
+                && (!firstPoint.getValue().trim().isEmpty() && !secondPoint.getValue().trim().isEmpty())) {
+            result = location.checkPoints(firstPoint.getValue()) && location.checkPoints(secondPoint.getValue());
+        }
+        return result;
     }
 
     public void onPermissionGranted() {
@@ -57,7 +61,7 @@ public class MainViewModel extends ViewModel {
                             location.setValue(response.body());
                         else {
                             location.setValue(null);
-                            errorMessage.setValue("Wprowadzone punkty są nieprawidłowe");
+                            errorMessage.setValue("Nie można połączyc wybranych punktów");
                         }
                         loadingState.postValue(View.GONE);
                     }
