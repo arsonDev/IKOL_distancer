@@ -1,3 +1,10 @@
 <resources>
     <string name="app_name">IKOL_distancer</string>
+    <string name="title">Wprowadź współrzędne aby obliczyć odległość</string>
+    <string name="fisrtPoint">Punkt początkowy</string>
+    <string name="secondPoint">Punkt końcowy</string>
+    <string name="Start">Początek</string>
+    <string name="end">Koniec</string>
+    <string name="distance">Odległość</string>
+    <string name="calculate">Oblicz</string>
 </resources>
